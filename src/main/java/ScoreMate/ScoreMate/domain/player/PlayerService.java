@@ -1,16 +1,20 @@
 package ScoreMate.ScoreMate.domain.player;
 
+import ScoreMate.ScoreMate.crawler.dto.CrawledPlayerRecordDto;
+import ScoreMate.ScoreMate.domain.match.League;
 import ScoreMate.ScoreMate.domain.team.Team;
 import ScoreMate.ScoreMate.domain.team.TeamRepository;
 import ScoreMate.ScoreMate.dto.response.PlayerRecordResponse;
 import ScoreMate.ScoreMate.dto.response.PlayerResponse;
 import ScoreMate.ScoreMate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -44,6 +48,63 @@ public class PlayerService {
         return playerRecordRepository.findByPlayer(player).stream()
                 .map(PlayerRecordResponse::from)
                 .toList();
+    }
+
+    /**
+     * PlayerCrawler가 수집한 타자/투수 리더보드 결과를 반영한다.
+     * 선수/팀이 아직 DB에 없으면 여기서 새로 만든다.
+     */
+    @Transactional
+    public void syncCrawledPlayerRecords(League league, int season, List<CrawledPlayerRecordDto> crawledRecords) {
+        for (CrawledPlayerRecordDto dto : crawledRecords) {
+            Team team = getOrCreateTeam(league, dto.externalTeamCode(), dto.teamNameKorean());
+            Player player = getOrCreatePlayer(team, dto);
+            upsertPlayerRecord(player, season, dto);
+        }
+        log.info("선수 기록 동기화 완료 - league: {}, season: {}, 건수: {}", league, season, crawledRecords.size());
+    }
+
+    private Player getOrCreatePlayer(Team team, CrawledPlayerRecordDto dto) {
+        return playerRepository.findByExternalId(dto.externalId())
+                .orElseGet(() -> playerRepository.save(
+                        Player.builder()
+                                .team(team)
+                                .name(dto.playerName())
+                                .position(dto.position())
+                                .externalId(dto.externalId())
+                                .build()
+                ));
+    }
+
+    private void upsertPlayerRecord(Player player, int season, CrawledPlayerRecordDto dto) {
+        PlayerRecord record = playerRecordRepository.findByPlayerAndSeason(player, season)
+                .orElseGet(() -> PlayerRecord.builder()
+                        .player(player)
+                        .season(season)
+                        .gamesPlayed(dto.gamesPlayed())
+                        .battingAverage(dto.battingAverage())
+                        .hits(dto.hits())
+                        .homeRuns(dto.homeRuns())
+                        .rbi(dto.rbi())
+                        .era(dto.era())
+                        .wins(dto.wins())
+                        .losses(dto.losses())
+                        .saves(dto.saves())
+                        .strikeouts(dto.strikeouts())
+                        .build());
+        playerRecordRepository.save(record);
+    }
+
+    private Team getOrCreateTeam(League league, String externalId, String name) {
+        return teamRepository.findByExternalId(externalId)
+                .orElseGet(() -> teamRepository.save(
+                        Team.builder()
+                                .league(league)
+                                .name(name)
+                                .shortName(externalId)
+                                .externalId(externalId)
+                                .build()
+                ));
     }
 
     private Player getPlayerOrThrow(Long playerId) {
