@@ -1,5 +1,6 @@
 package ScoreMate.ScoreMate.domain.team;
 
+import ScoreMate.ScoreMate.crawler.dto.CrawledStandingDto;
 import ScoreMate.ScoreMate.domain.match.League;
 import ScoreMate.ScoreMate.dto.response.StandingResponse;
 import lombok.RequiredArgsConstructor;
@@ -44,5 +45,31 @@ public class StandingService {
 
         standing.update(rank, wins, losses, draws, winRate, gamesBehind);
         standingRepository.save(standing);
+    }
+
+    /**
+     * StandingCrawler가 크롤링한 결과를 통째로 반영한다.
+     * 팀이 아직 DB에 없으면 여기서 새로 만든다 (externalId = 영문 팀 코드 기준).
+     */
+    @Transactional
+    public void syncCrawledStandings(League league, int season, List<CrawledStandingDto> crawledStandings) {
+        for (CrawledStandingDto dto : crawledStandings) {
+            Team team = getOrCreateTeam(league, dto.externalTeamCode(), dto.teamNameKorean());
+            upsertStanding(team, season, dto.rank(), dto.wins(), dto.losses(), dto.draws(),
+                    dto.winRate(), dto.gamesBehind());
+        }
+        log.info("순위표 동기화 완료 - league: {}, season: {}, 건수: {}", league, season, crawledStandings.size());
+    }
+
+    private Team getOrCreateTeam(League league, String externalId, String name) {
+        return teamRepository.findByExternalId(externalId)
+                .orElseGet(() -> teamRepository.save(
+                        Team.builder()
+                                .league(league)
+                                .name(name)
+                                .shortName(externalId)
+                                .externalId(externalId)
+                                .build()
+                ));
     }
 }
