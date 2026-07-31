@@ -12,6 +12,7 @@ public record CrawledMatchDto(
         String awayTeam,
         LocalDateTime matchDate,
         boolean finished,
+        boolean live,
         Integer homeScore,
         Integer awayScore
 ) {

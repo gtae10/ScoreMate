@@ -50,6 +50,8 @@ public class MatchService {
 
             if (dto.finished() && dto.homeScore() != null && dto.awayScore() != null) {
                 match.updateResult(dto.homeScore(), dto.awayScore());
+            } else if (dto.live() && dto.homeScore() != null && dto.awayScore() != null) {
+                match.markLive(dto.homeScore(), dto.awayScore());
             }
         }
         log.info("경기 데이터 동기화 완료 - league: {}, 건수: {}", league, crawledMatches.size());

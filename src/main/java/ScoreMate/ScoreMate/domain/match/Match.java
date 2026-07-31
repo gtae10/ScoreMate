@@ -60,6 +60,19 @@ public class Match extends BaseEntity {
         this.status = MatchStatus.FINISHED;
     }
 
+    /**
+     * 진행 중인 경기의 실시간 스코어를 반영한다. 이미 FINISHED로 확정된 경기는
+     * (크롤링 순서가 꼬여서 뒤늦게 LIVE로 되돌리는 일이 없도록) 건드리지 않는다.
+     */
+    public void markLive(int homeScore, int awayScore) {
+        if (this.status == MatchStatus.FINISHED) {
+            return;
+        }
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
+        this.status = MatchStatus.LIVE;
+    }
+
     public void markCancelled() {
         this.status = MatchStatus.CANCELLED;
     }

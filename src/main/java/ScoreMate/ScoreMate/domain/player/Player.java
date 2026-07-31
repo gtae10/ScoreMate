@@ -47,6 +47,10 @@ public class Player extends BaseEntity {
         this.team = team;
     }
 
+    public void updateProfile(Integer backNumber) {
+        this.backNumber = backNumber;
+    }
+
     // 야구(투수/타자 구분 정도), 이후 축구 포지션(FW/MF/DF/GK) 확장 여지를 남겨둠
     public enum Position {
         PITCHER, BATTER,
