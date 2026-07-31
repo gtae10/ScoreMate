@@ -21,9 +21,15 @@ dependencies {
     // 웹 / REST API
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    // 화면 렌더링 (Thymeleaf)
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
     // JPA + MySQL
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // JSON 파싱 (KBO 일정 API 응답 처리용)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // 크롤링
     implementation 'org.jsoup:jsoup:1.17.2'
@@ -38,7 +44,6 @@ dependencies {
 
     // 유효성 검증
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'

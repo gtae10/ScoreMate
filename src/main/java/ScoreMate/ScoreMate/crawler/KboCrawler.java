@@ -195,17 +195,25 @@ public class KboCrawler {
             log.warn("경기 정보 파싱 실패 (팀명 없음) - date: {}, html: {}", date, playHtml);
             return null;
         }
-        String homeTeam = topSpans.first().text();
-        String awayTeam = topSpans.last().text();
+        // KBO 스코어보드 페이지(alt="원정팀"/alt="홈팀")로 실제 순서를 확인한 결과,
+        // "play" 셀의 첫 번째 span은 원정팀, 마지막 span이 홈팀이다.
+        // (gameId도 "원정팀코드+홈팀코드" 순서 — 예: LGOB0 = LG(원정) + OB(홈, 두산))
+        String awayTeam = topSpans.first().text();
+        String homeTeam = topSpans.last().text();
 
         var scoreSpans = body.select("em > span.win, em > span.lose, em > span.same");
+
+        // "종료 여부"는 점수 클래스(win/lose/same) 존재로 판단하지 않는다 —
+        // 시작 전/진행 중인 경기도 스코어 칸이 0으로 기본 렌더링되면서 same 클래스가
+        // 붙어있는 경우가 있어서(0-0으로 오판) 신뢰할 수 없었다.
+        // 대신 relay 링크의 section=REVIEW 여부로 판단 (끝난 경기만 리뷰 버튼이 이 값으로 붙음).
+        boolean finished = relayHtml != null && relayHtml.contains("section=REVIEW");
+
         Integer homeScore = null;
         Integer awayScore = null;
-        boolean finished = false;
-        if (scoreSpans.size() == 2) {
-            homeScore = Integer.parseInt(scoreSpans.get(0).text());
-            awayScore = Integer.parseInt(scoreSpans.get(1).text());
-            finished = true;
+        if (finished && scoreSpans.size() == 2) {
+            awayScore = Integer.parseInt(scoreSpans.get(0).text());
+            homeScore = Integer.parseInt(scoreSpans.get(1).text());
         }
 
         // 우천취소/그라운드사정 등으로 취소된 경기는 결과 미확정 처리
@@ -221,7 +229,7 @@ public class KboCrawler {
                 ? gameId
                 : date.toString() + "_" + homeTeam + "_" + awayTeam;
 
-        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, homeScore, awayScore);
+        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, false, homeScore, awayScore);
     }
 
     private LocalTime parseTime(String timeHtml) {
