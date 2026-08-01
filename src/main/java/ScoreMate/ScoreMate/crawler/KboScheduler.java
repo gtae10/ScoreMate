@@ -9,6 +9,7 @@ import ScoreMate.ScoreMate.domain.player.PlayerService;
 import ScoreMate.ScoreMate.domain.team.StandingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -39,17 +40,37 @@ public class KboScheduler {
     private final PlayerCrawler playerCrawler;
     private final PlayerService playerService;
 
+    private final PlayerRosterCrawler playerRosterCrawler;
+
     // KBO 정규시즌 개막월 근사치. 이 달 이전 데이터는 어차피 없으니 매일 훑을 필요 없음.
     private static final int SEASON_START_MONTH = 4;
 
     /**
-     * 앱이 완전히 뜬 직후 한 번 자동으로 시즌 전체를 동기화한다.
-     * 서버를 재시작할 때마다 크롤링이 도는 트레이드오프가 있지만,
-     * 자정 스케줄만 믿으면 방금 켠 서버엔 최신 데이터가 없을 수 있어서 같이 걸어둔다.
+     * 앱 시작 시 자동으로 시즌 전체를 동기화할지 여부.
+     * 기본값 false — @SpringBootTest로 도는 모든 테스트가 컨텍스트를 띄울 때마다
+     * 이게 같이 실행되면서 실제 네트워크 호출 + 수백 건 SQL 로그가 다른 테스트
+     * 결과를 덮어버리는 문제가 있었다. 실제 앱 실행할 때만 켜고 싶으면
+     * application.yml에 app.startup-sync.enabled=true 추가.
+     */
+    @Value("${app.startup-sync.enabled:false}")
+    private boolean startupSyncEnabled;
+
+    /**
+     * 앱이 완전히 뜬 직후 실행되는 시작 루틴.
+     *
+     * - 중복 정리 + 오늘 일정 채우기는 가벼운 작업이라 토글과 무관하게 항상 실행한다.
+     *   (이게 없으면 앱 켤 때마다 사람이 직접 DELETE 치고 테스트를 수동 실행해야 했음)
+     * - 시즌 전체 백필은 무거운 작업이라 startupSyncEnabled가 true일 때만 실행한다.
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
-        log.info("앱 시작 - 초기 데이터 동기화 시작");
+        matchService.deduplicateMatches();
+        runMatchSync(LocalDate.now());
+
+        if (!startupSyncEnabled) {
+            return;
+        }
+        log.info("앱 시작 - 시즌 전체 동기화 시작");
         syncFullSeason();
     }
 
@@ -78,8 +99,13 @@ public class KboScheduler {
      * 오늘 경기를 짧은 주기로 다시 훑어서 실시간에 가깝게 유지한다.
      * 일정 API(KboCrawler) 대신 스코어보드 페이지(ScoreBoardCrawler)를 쓴다 —
      * lblGameState 텍스트로 "진행 중(LIVE)"까지 구분해서 반영할 수 있어서다.
+     *
+     * KBO 서버가 우리한테 변경을 push해주는 게 아니라 우리가 계속 다시 물어보는(polling)
+     * 방식이라 완전한 실시간은 아니다. 너무 잦은 요청은 서버에 부담을 주는 행위라
+     * (지금까지 크롤러 전반에서 지켜온 원칙 — robots.txt 준수, 과도한 요청 자제),
+     * 사람이 스코어보드를 새로고침하는 정도의 빈도(30초)로 절충했다.
      */
-    @Scheduled(fixedRate = 3 * 60 * 1000)
+    @Scheduled(fixedRate = 30 * 1000)
     public void syncTodayLiveScores() {
         log.info("KBO 실시간 스코어 동기화 시작");
         List<CrawledMatchDto> crawled = scoreBoardCrawler.crawlToday();
@@ -119,6 +145,18 @@ public class KboScheduler {
 
         List<CrawledPlayerRecordDto> pitchers = playerCrawler.crawlPitchingLeaders();
         playerService.syncCrawledPlayerRecords(League.KBO, season, pitchers);
+    }
+
+    /**
+     * 매일 새벽 3시 50분, 10개 구단 전체 로스터(감독/코치 제외 선수만)를 갱신한다.
+     * 리더보드(상위 20명)엔 안 잡히는 선수들까지 프로필을 채워주는 역할 —
+     * 팀당 GET+POST 2번씩, 총 20번 요청이 나가는 무거운 축이라 하루 1번으로 제한.
+     */
+    @Scheduled(cron = "0 50 3 * * *")
+    public void syncRosters() {
+        log.info("KBO 팀 로스터 동기화 시작");
+        var crawled = playerRosterCrawler.crawlAllTeamRosters();
+        playerService.syncCrawledRoster(League.KBO, crawled);
     }
 
     private void runMatchSync(LocalDate date) {

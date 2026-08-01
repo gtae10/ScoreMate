@@ -59,7 +59,7 @@ public class PageController {
 
         String statusText = switch (match.status()) {
             case "FINISHED" -> "종료";
-            case "CANCELLED" -> "취소";
+            case "CANCELLED" -> "취소/연기";
             case "LIVE" -> "진행중";
             default -> match.matchDate().toLocalTime().toString().substring(0, 5);
         };
