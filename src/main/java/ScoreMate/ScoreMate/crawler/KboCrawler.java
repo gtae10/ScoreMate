@@ -216,18 +216,19 @@ public class KboCrawler {
             homeScore = Integer.parseInt(scoreSpans.get(1).text());
         }
 
-        // 우천취소/그라운드사정 등으로 취소된 경기는 결과 미확정 처리
-        boolean cancelled = remark != null && (remark.contains("취소") || remark.contains("사정"));
+        // 우천취소/그라운드사정/연기 등으로 정상 진행 안 된 경기는 결과 미확정 처리
+        boolean cancelled = remark != null && (remark.contains("취소") || remark.contains("사정") || remark.contains("연기"));
         if (cancelled) {
             finished = false;
             homeScore = null;
             awayScore = null;
         }
 
-        String gameId = extractGameId(relayHtml);
-        String externalId = gameId != null
-                ? gameId
-                : date.toString() + "_" + homeTeam + "_" + awayTeam;
+        // externalId는 항상 "날짜_홈팀_원정팀" 조합으로 통일한다.
+        // 실제 KBO gameId(문자열)를 쓰면 대소문자 등 미묘한 차이로 ScoreBoardCrawler가 만드는
+        // ID랑 어긋나서 같은 경기가 중복 저장되는 문제가 있었다 — 날짜+팀명 조합이 두 크롤러
+        // 사이에서 항상 똑같이 만들어지므로 더 안전하다.
+        String externalId = date.toString() + "_" + homeTeam + "_" + awayTeam;
 
         return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, false, homeScore, awayScore);
     }

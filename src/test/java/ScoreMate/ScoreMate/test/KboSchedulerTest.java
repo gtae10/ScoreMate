@@ -50,4 +50,11 @@ class KboSchedulerTest {
         kboScheduler.syncPlayerRecords();
         System.out.println("선수 기록 동기화 완료 (예외 없이 종료됨)");
     }
+
+    @Test
+    void 스케줄러의_로스터_동기화가_정상_동작한다() {
+        // 팀당 GET+POST 2번씩, 총 20번 요청이 나가서 다른 테스트보다 오래 걸림
+        kboScheduler.syncRosters();
+        System.out.println("로스터 동기화 완료 (예외 없이 종료됨)");
+    }
 }

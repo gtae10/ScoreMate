@@ -98,7 +98,12 @@ public class ScoreBoardCrawler {
         LocalTime time = parseTime(text(block, "p.place"));
         LocalDateTime matchDateTime = time != null ? LocalDateTime.of(today, time) : today.atStartOfDay();
 
-        return new CrawledMatchDto(gameId, homeTeam, awayTeam, matchDateTime, finished, live, homeScore, awayScore);
+        // externalId는 KboCrawler와 반드시 같은 형식(날짜_홈팀_원정팀)으로 통일 —
+        // 실제 gameId 문자열을 쓰면 두 크롤러 사이에서 미묘하게 어긋나 같은 경기가
+        // 중복 저장되는 문제가 있었다. gameId는 "유효한 경기 블록인지" 확인용으로만 쓴다.
+        String externalId = today + "_" + homeTeam + "_" + awayTeam;
+
+        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, live, homeScore, awayScore);
     }
 
     private String extractGameId(Element block) {

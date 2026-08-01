@@ -8,7 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -55,5 +58,51 @@ public class MatchService {
             }
         }
         log.info("경기 데이터 동기화 완료 - league: {}, 건수: {}", league, crawledMatches.size());
+    }
+
+    /**
+     * externalId 형식이 바뀌면서(gameId 기반 → 날짜_홈팀_원정팀 기반) 예전에 이미
+     * 중복 저장돼버린 경기들을 자동으로 정리한다. 같은 리그+날짜+홈팀+원정팀 조합이
+     * 여러 행으로 있으면, 가장 진행 상태가 앞선(종료 > 진행중 > 취소 > 예정) 것 하나만
+     * 남기고 나머지는 지운다 (동점이면 가장 최근에 갱신된 것을 남김).
+     */
+    @Transactional
+    public void deduplicateMatches() {
+        List<Match> all = matchRepository.findAll();
+
+        Map<String, List<Match>> grouped = all.stream()
+                .collect(Collectors.groupingBy(m ->
+                        m.getLeague() + "_" + m.getMatchDate().toLocalDate() + "_" + m.getHomeTeam() + "_" + m.getAwayTeam()
+                ));
+
+        int removed = 0;
+        for (List<Match> group : grouped.values()) {
+            if (group.size() <= 1) {
+                continue;
+            }
+            Match keep = group.stream()
+                    .max(Comparator.<Match>comparingInt(m -> statusPriority(m.getStatus()))
+                            .thenComparing(Match::getUpdatedAt))
+                    .orElseThrow();
+
+            List<Match> toRemove = group.stream()
+                    .filter(m -> !m.getId().equals(keep.getId()))
+                    .toList();
+            matchRepository.deleteAll(toRemove);
+            removed += toRemove.size();
+        }
+
+        if (removed > 0) {
+            log.info("중복 경기 정리 완료 - 삭제된 행: {}", removed);
+        }
+    }
+
+    private int statusPriority(Match.MatchStatus status) {
+        return switch (status) {
+            case FINISHED -> 3;
+            case LIVE -> 2;
+            case CANCELLED -> 1;
+            case SCHEDULED -> 0;
+        };
     }
 }
