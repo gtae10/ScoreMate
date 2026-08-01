@@ -40,6 +40,10 @@ public class Match extends BaseEntity {
 
     private Integer awayScore;
 
+    // 진행중일 때의 실제 이닝 텍스트 (예: "5회말"). LIVE 상태가 아니면 null.
+    @Column(length = 20)
+    private String liveInning;
+
     // 크롤링 소스에서의 원본 식별자 (중복 수집 방지용)
     @Column(unique = true, length = 100)
     private String externalId;
@@ -58,23 +62,29 @@ public class Match extends BaseEntity {
         this.homeScore = homeScore;
         this.awayScore = awayScore;
         this.status = MatchStatus.FINISHED;
+        this.liveInning = null;
     }
 
     /**
-     * 진행 중인 경기의 실시간 스코어를 반영한다. 이미 FINISHED로 확정된 경기는
-     * (크롤링 순서가 꼬여서 뒤늦게 LIVE로 되돌리는 일이 없도록) 건드리지 않는다.
+     * 진행 중인 경기의 실시간 스코어 + 이닝 텍스트를 반영한다. 이미 FINISHED로 확정된
+     * 경기는 (크롤링 순서가 꼬여서 뒤늦게 LIVE로 되돌리는 일이 없도록) 건드리지 않는다.
      */
-    public void markLive(int homeScore, int awayScore) {
+    public void markLive(int homeScore, int awayScore, String liveInning) {
         if (this.status == MatchStatus.FINISHED) {
             return;
         }
         this.homeScore = homeScore;
         this.awayScore = awayScore;
         this.status = MatchStatus.LIVE;
+        this.liveInning = liveInning;
     }
 
     public void markCancelled() {
         this.status = MatchStatus.CANCELLED;
+    }
+
+    public void markPostponed() {
+        this.status = MatchStatus.POSTPONED;
     }
 
     public MatchResult getResult() {
@@ -87,7 +97,7 @@ public class Match extends BaseEntity {
     }
 
     public enum MatchStatus {
-        SCHEDULED, LIVE, FINISHED, CANCELLED
+        SCHEDULED, LIVE, FINISHED, CANCELLED, POSTPONED
     }
 
     public enum MatchResult {

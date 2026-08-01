@@ -216,9 +216,10 @@ public class KboCrawler {
             homeScore = Integer.parseInt(scoreSpans.get(1).text());
         }
 
-        // 우천취소/그라운드사정/연기 등으로 정상 진행 안 된 경기는 결과 미확정 처리
-        boolean cancelled = remark != null && (remark.contains("취소") || remark.contains("사정") || remark.contains("연기"));
-        if (cancelled) {
+        // "연기"와 그 외 취소(우천취소/그라운드사정)는 서로 다른 상태로 구분한다.
+        boolean postponed = remark != null && remark.contains("연기");
+        boolean cancelled = !postponed && remark != null && (remark.contains("취소") || remark.contains("사정"));
+        if (postponed || cancelled) {
             finished = false;
             homeScore = null;
             awayScore = null;
@@ -230,7 +231,7 @@ public class KboCrawler {
         // 사이에서 항상 똑같이 만들어지므로 더 안전하다.
         String externalId = date.toString() + "_" + homeTeam + "_" + awayTeam;
 
-        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, false, homeScore, awayScore);
+        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, false, cancelled, postponed, homeScore, awayScore, null);
     }
 
     private LocalTime parseTime(String timeHtml) {

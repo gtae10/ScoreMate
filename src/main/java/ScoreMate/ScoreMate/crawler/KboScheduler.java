@@ -103,9 +103,9 @@ public class KboScheduler {
      * KBO 서버가 우리한테 변경을 push해주는 게 아니라 우리가 계속 다시 물어보는(polling)
      * 방식이라 완전한 실시간은 아니다. 너무 잦은 요청은 서버에 부담을 주는 행위라
      * (지금까지 크롤러 전반에서 지켜온 원칙 — robots.txt 준수, 과도한 요청 자제),
-     * 사람이 스코어보드를 새로고침하는 정도의 빈도(30초)로 절충했다.
+     * 사람이 스코어보드를 새로고침하는 정도의 빈도(10초)로 절충했다.
      */
-    @Scheduled(fixedRate = 30 * 1000)
+    @Scheduled(fixedRate = 10 * 1000)
     public void syncTodayLiveScores() {
         log.info("KBO 실시간 스코어 동기화 시작");
         List<CrawledMatchDto> crawled = scoreBoardCrawler.crawlToday();

@@ -54,7 +54,11 @@ public class MatchService {
             if (dto.finished() && dto.homeScore() != null && dto.awayScore() != null) {
                 match.updateResult(dto.homeScore(), dto.awayScore());
             } else if (dto.live() && dto.homeScore() != null && dto.awayScore() != null) {
-                match.markLive(dto.homeScore(), dto.awayScore());
+                match.markLive(dto.homeScore(), dto.awayScore(), dto.liveStatusText());
+            } else if (dto.postponed()) {
+                match.markPostponed();
+            } else if (dto.cancelled()) {
+                match.markCancelled();
             }
         }
         log.info("경기 데이터 동기화 완료 - league: {}, 건수: {}", league, crawledMatches.size());
@@ -99,9 +103,10 @@ public class MatchService {
 
     private int statusPriority(Match.MatchStatus status) {
         return switch (status) {
-            case FINISHED -> 3;
-            case LIVE -> 2;
-            case CANCELLED -> 1;
+            case FINISHED -> 4;
+            case LIVE -> 3;
+            case CANCELLED -> 2;
+            case POSTPONED -> 1;
             case SCHEDULED -> 0;
         };
     }
