@@ -46,26 +46,33 @@ public class KboScheduler {
     private static final int SEASON_START_MONTH = 4;
 
     /**
-     * 앱 시작 시 자동으로 시즌 전체를 동기화할지 여부.
-     * 기본값 false — @SpringBootTest로 도는 모든 테스트가 컨텍스트를 띄울 때마다
-     * 이게 같이 실행되면서 실제 네트워크 호출 + 수백 건 SQL 로그가 다른 테스트
-     * 결과를 덮어버리는 문제가 있었다. 실제 앱 실행할 때만 켜고 싶으면
-     * application.yml에 app.startup-sync.enabled=true 추가.
+     * 앱 시작 시 자동으로 시즌 전체(4월~이번달)를 동기화할지 여부.
+     * 기본값 true — 앱만 켜면 시즌 전체 일정이 바로 보이길 원해서 기본으로 켜뒀다.
+     *
+     * 다만 @SpringBootTest로 도는 모든 테스트도 컨텍스트를 띄울 때 이게 같이 실행돼서
+     * 실제 네트워크 호출 + 많은 SQL 로그가 같이 찍힌다. 테스트할 때 이게 거슬리면
+     * application.yml에 app.startup-sync.enabled=false를 추가해서 끌 수 있다.
      */
-    @Value("${app.startup-sync.enabled:false}")
+    @Value("${app.startup-sync.enabled:true}")
     private boolean startupSyncEnabled;
 
     /**
      * 앱이 완전히 뜬 직후 실행되는 시작 루틴.
      *
-     * - 중복 정리 + 오늘 일정 채우기는 가벼운 작업이라 토글과 무관하게 항상 실행한다.
-     *   (이게 없으면 앱 켤 때마다 사람이 직접 DELETE 치고 테스트를 수동 실행해야 했음)
-     * - 시즌 전체 백필은 무거운 작업이라 startupSyncEnabled가 true일 때만 실행한다.
+     * - 중복 정리 + 이번 달 전체 채우기는 가벼운 작업(요청 1번)이라 토글과 무관하게
+     *   항상 실행한다. 이게 없으면 어제/내일처럼 오늘이 아닌 날짜는 새벽 스케줄이
+     *   돌기 전까지 계속 비어있었다.
+     * - 시즌 전체(4월~이번달 전부) 백필은 더 무거운 작업이라 startupSyncEnabled가
+     *   true일 때만 실행한다.
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         matchService.deduplicateMatches();
-        runMatchSync(LocalDate.now());
+
+        LocalDate today = LocalDate.now();
+        List<CrawledMatchDto> thisMonth = kboCrawler.crawlByMonth(today.getYear(), today.getMonthValue());
+        matchService.syncCrawledMatches(League.KBO, thisMonth);
+        log.info("앱 시작 - 이번 달 일정 채우기 완료 - {}건", thisMonth.size());
 
         if (!startupSyncEnabled) {
             return;
