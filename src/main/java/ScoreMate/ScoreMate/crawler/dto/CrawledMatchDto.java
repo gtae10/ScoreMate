@@ -13,7 +13,10 @@ public record CrawledMatchDto(
         LocalDateTime matchDate,
         boolean finished,
         boolean live,
+        boolean cancelled,
+        boolean postponed,
         Integer homeScore,
-        Integer awayScore
+        Integer awayScore,
+        String liveStatusText // 예: "5회말". live=true일 때만 값이 있고, 그 외엔 null
 ) {
 }

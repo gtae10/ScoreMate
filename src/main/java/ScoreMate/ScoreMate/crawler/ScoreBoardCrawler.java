@@ -95,6 +95,11 @@ public class ScoreBoardCrawler {
         boolean notStarted = stateText.endsWith("전") || stateText.isBlank();
         boolean live = !finished && !notStarted;
 
+        // 디버깅용 — 실제로 스코어보드에서 어떤 상태 텍스트가 오는지 확인하기 위해 항상 남김.
+        // 문제 없는 게 확인되면 이 줄은 지워도 됨.
+        log.info("스코어보드 상태 파싱 - {} vs {} | stateText: '{}' | finished={}, live={}",
+                awayTeam, homeTeam, stateText, finished, live);
+
         LocalTime time = parseTime(text(block, "p.place"));
         LocalDateTime matchDateTime = time != null ? LocalDateTime.of(today, time) : today.atStartOfDay();
 
@@ -103,7 +108,10 @@ public class ScoreBoardCrawler {
         // 중복 저장되는 문제가 있었다. gameId는 "유효한 경기 블록인지" 확인용으로만 쓴다.
         String externalId = today + "_" + homeTeam + "_" + awayTeam;
 
-        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, live, homeScore, awayScore);
+        // 진행중일 때만 "5회말" 같은 실제 이닝 텍스트를 같이 담는다 (화면에 그대로 표시하기 위함)
+        String liveStatusText = live ? stateText : null;
+
+        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, live, false, false, homeScore, awayScore, liveStatusText);
     }
 
     private String extractGameId(Element block) {

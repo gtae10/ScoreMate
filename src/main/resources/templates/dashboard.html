@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" th:href="@{/css/styles.css}" />
   <title>ScoreMate</title>
 </head>
@@ -70,30 +70,30 @@
     </div>
 
     <div class="match-list">
-      <div class="match-row" th:each="match : ${matches}">
+      <div class="match-row" th:each="match : ${matches}" th:attr="data-away=${match.awayTeam},data-home=${match.homeTeam}">
         <div class="status-badge"
              th:classappend="${match.live} ? ' live' : ''"
              th:text="${match.statusText}">
           종료
         </div>
 
-        <div class="team home">
-          <div class="crest" th:style="'background:' + ${match.homeColor}" th:text="${match.homeCode}">팀</div>
-          <span th:text="${match.homeTeam}">홈팀</span>
+        <div class="team team-left">
+          <span th:text="${match.awayTeam}">원정팀</span>
+          <div class="crest" th:style="'background:' + ${match.awayColor}" th:text="${match.awayCode}">팀</div>
         </div>
 
         <div class="score-box" th:if="${match.homeScore != null}">
-          <span class="n" th:classappend="' ' + ${match.homeResult}" th:text="${match.homeScore}">0</span>
-          <span class="dash">–</span>
           <span class="n" th:classappend="' ' + ${match.awayResult}" th:text="${match.awayScore}">0</span>
+          <span class="dash">–</span>
+          <span class="n" th:classappend="' ' + ${match.homeResult}" th:text="${match.homeScore}">0</span>
         </div>
         <div class="score-box" th:if="${match.homeScore == null}">
           <span class="dash">– : –</span>
         </div>
 
-        <div class="team away">
-          <div class="crest" th:style="'background:' + ${match.awayColor}" th:text="${match.awayCode}">팀</div>
-          <span th:text="${match.awayTeam}">원정팀</span>
+        <div class="team team-right">
+          <span th:text="${match.homeTeam}">홈팀</span>
+          <div class="crest" th:style="'background:' + ${match.homeColor}" th:text="${match.homeCode}">팀</div>
         </div>
       </div>
 
@@ -118,6 +118,78 @@
     </div>
   </div>
 </div>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  const SELECTED_DATE = /*[[${selectedDate.toString()}]]*/ '2026-08-01';
+  /*]]>*/
+
+  function resultClass(myScore, otherScore) {
+    if (myScore > otherScore) return ' win';
+    if (myScore < otherScore) return ' lose';
+    return '';
+  }
+
+  function statusText(match) {
+    if (match.status === 'FINISHED') return '종료';
+    if (match.status === 'CANCELLED') return '취소';
+    if (match.status === 'POSTPONED') return '연기';
+    if (match.status === 'LIVE') return match.liveInning || '진행중';
+    const d = new Date(match.matchDate);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  function updateRow(row, match) {
+    const badge = row.querySelector('.status-badge');
+    badge.textContent = statusText(match);
+    badge.classList.toggle('live', match.status === 'LIVE');
+
+    const scoreBox = row.querySelector('.score-box');
+    if (match.homeScore !== null && match.homeScore !== undefined) {
+      scoreBox.innerHTML =
+        '<span class="n' + resultClass(match.awayScore, match.homeScore) + '">' + match.awayScore + '</span>' +
+        '<span class="dash">–</span>' +
+        '<span class="n' + resultClass(match.homeScore, match.awayScore) + '">' + match.homeScore + '</span>';
+    } else {
+      scoreBox.innerHTML = '<span class="dash">– : –</span>';
+    }
+  }
+
+  async function refreshScores() {
+    try {
+      const res = await fetch('/api/matches?league=KBO&date=' + SELECTED_DATE);
+      const body = await res.json();
+      const matches = body.data || [];
+      console.log('실시간 갱신 - 받아온 경기 수:', matches.length, matches);
+
+      matches.forEach((match) => {
+        const row = document.querySelector(
+          '.match-row[data-away="' + CSS.escape(match.awayTeam) + '"][data-home="' + CSS.escape(match.homeTeam) + '"]'
+        );
+        if (row) {
+          updateRow(row, match);
+        }
+      });
+    } catch (e) {
+      console.error('실시간 갱신 실패', e);
+    }
+  }
+
+  function localDateString(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  // 오늘 날짜일 때만 자동 갱신 (지난 날짜/미래 날짜는 어차피 안 바뀌니 불필요한 요청 방지)
+  // toISOString()은 UTC 기준이라 한국 시간대에서 날짜가 하루 어긋날 수 있어 직접 로컬 날짜로 비교한다.
+  const isToday = SELECTED_DATE === localDateString(new Date());
+  console.log('실시간 갱신 대상 여부:', isToday, '(선택된 날짜:', SELECTED_DATE, ')');
+  if (isToday) {
+    setInterval(refreshScores, 10000);
+  }
+</script>
 
 </body>
 </html>
