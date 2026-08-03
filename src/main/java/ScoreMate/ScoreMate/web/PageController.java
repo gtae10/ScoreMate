@@ -79,11 +79,23 @@ public class PageController {
             }
         }
 
+        // 승/패 투수를 스코어 결과 기준으로 홈/원정에 배정 (이긴 팀 쪽에 승리투수, 진 팀 쪽에 패전투수)
+        String homePitcher = null;
+        String awayPitcher = null;
+        if ("win".equals(homeResult)) {
+            homePitcher = match.winPitcher();
+            awayPitcher = match.losePitcher();
+        } else if ("lose".equals(homeResult)) {
+            homePitcher = match.losePitcher();
+            awayPitcher = match.winPitcher();
+        }
+
         return new MatchView(
                 statusText,
                 "LIVE".equals(match.status()),
-                match.homeTeam(), homeBadge.code(), homeBadge.color(), match.homeScore(), homeResult,
-                match.awayTeam(), awayBadge.code(), awayBadge.color(), match.awayScore(), awayResult
+                match.homeTeam(), homeBadge.code(), homeBadge.color(), match.homeScore(), homeResult, homePitcher,
+                match.awayTeam(), awayBadge.code(), awayBadge.color(), match.awayScore(), awayResult, awayPitcher,
+                match.stadium()
         );
     }
 
@@ -118,8 +130,9 @@ public class PageController {
     public record MatchView(
             String statusText,
             boolean live,
-            String homeTeam, String homeCode, String homeColor, Integer homeScore, String homeResult,
-            String awayTeam, String awayCode, String awayColor, Integer awayScore, String awayResult
+            String homeTeam, String homeCode, String homeColor, Integer homeScore, String homeResult, String homePitcher,
+            String awayTeam, String awayCode, String awayColor, Integer awayScore, String awayResult, String awayPitcher,
+            String stadium
     ) {
     }
 }

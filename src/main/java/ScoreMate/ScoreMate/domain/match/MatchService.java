@@ -51,6 +51,9 @@ public class MatchService {
                                     .build()
                     ));
 
+            match.updateStadium(dto.stadium());
+            match.updatePitchers(dto.winPitcher(), dto.losePitcher());
+
             if (dto.finished() && dto.homeScore() != null && dto.awayScore() != null) {
                 match.updateResult(dto.homeScore(), dto.awayScore());
             } else if (dto.live() && dto.homeScore() != null && dto.awayScore() != null) {

@@ -17,6 +17,9 @@ public record CrawledMatchDto(
         boolean postponed,
         Integer homeScore,
         Integer awayScore,
-        String liveStatusText // 예: "5회말". live=true일 때만 값이 있고, 그 외엔 null
+        String liveStatusText, // 예: "5회말". live=true일 때만 값이 있고, 그 외엔 null
+        String stadium,
+        String winPitcher,  // 종료된 경기의 승리 투수. 그 외엔 null
+        String losePitcher  // 종료된 경기의 패전 투수. 그 외엔 null
 ) {
 }

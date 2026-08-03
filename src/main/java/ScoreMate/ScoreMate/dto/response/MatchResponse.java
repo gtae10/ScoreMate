@@ -13,7 +13,10 @@ public record MatchResponse(
         String status,
         Integer homeScore,
         Integer awayScore,
-        String liveInning
+        String liveInning,
+        String stadium,
+        String winPitcher,
+        String losePitcher
 ) {
     public static MatchResponse from(Match match) {
         return new MatchResponse(
@@ -25,7 +28,10 @@ public record MatchResponse(
                 match.getStatus().name(),
                 match.getHomeScore(),
                 match.getAwayScore(),
-                match.getLiveInning()
+                match.getLiveInning(),
+                match.getStadium(),
+                match.getWinPitcher(),
+                match.getLosePitcher()
         );
     }
 }
