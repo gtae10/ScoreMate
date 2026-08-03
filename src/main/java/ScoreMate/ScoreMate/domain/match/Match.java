@@ -44,6 +44,15 @@ public class Match extends BaseEntity {
     @Column(length = 20)
     private String liveInning;
 
+    @Column(length = 30)
+    private String stadium;
+
+    @Column(length = 30)
+    private String winPitcher;
+
+    @Column(length = 30)
+    private String losePitcher;
+
     // 크롤링 소스에서의 원본 식별자 (중복 수집 방지용)
     @Column(unique = true, length = 100)
     private String externalId;
@@ -56,6 +65,21 @@ public class Match extends BaseEntity {
         this.matchDate = matchDate;
         this.externalId = externalId;
         this.status = MatchStatus.SCHEDULED;
+    }
+
+    public void updateStadium(String stadium) {
+        if (stadium != null && !stadium.isBlank()) {
+            this.stadium = stadium;
+        }
+    }
+
+    public void updatePitchers(String winPitcher, String losePitcher) {
+        if (winPitcher != null && !winPitcher.isBlank()) {
+            this.winPitcher = winPitcher;
+        }
+        if (losePitcher != null && !losePitcher.isBlank()) {
+            this.losePitcher = losePitcher;
+        }
     }
 
     public void updateResult(int homeScore, int awayScore) {

@@ -77,9 +77,12 @@
           종료
         </div>
 
-        <div class="team team-left">
-          <span th:text="${match.awayTeam}">원정팀</span>
-          <div class="crest" th:style="'background:' + ${match.awayColor}" th:text="${match.awayCode}">팀</div>
+        <div class="team-col team-col-left">
+          <div class="team-names">
+            <span th:text="${match.awayTeam}">원정팀</span>
+            <div class="crest" th:style="'background:' + ${match.awayColor}" th:text="${match.awayCode}">팀</div>
+          </div>
+          <div class="pitcher" th:if="${match.awayPitcher != null}" th:text="'선발 투수: ' + ${match.awayPitcher}">선발 투수: 투수명</div>
         </div>
 
         <div class="score-box" th:if="${match.homeScore != null}">
@@ -91,10 +94,15 @@
           <span class="dash">– : –</span>
         </div>
 
-        <div class="team team-right">
-          <span th:text="${match.homeTeam}">홈팀</span>
-          <div class="crest" th:style="'background:' + ${match.homeColor}" th:text="${match.homeCode}">팀</div>
+        <div class="team-col team-col-right">
+          <div class="team-names">
+            <span th:text="${match.homeTeam}">홈팀</span>
+            <div class="crest" th:style="'background:' + ${match.homeColor}" th:text="${match.homeCode}">팀</div>
+          </div>
+          <div class="pitcher" th:if="${match.homePitcher != null}" th:text="'선발 투수: ' + ${match.homePitcher}">선발 투수: 투수명</div>
         </div>
+
+        <div class="stadium" th:text="${match.stadium}">잠실</div>
       </div>
 
       <div class="match-row" th:if="${#lists.isEmpty(matches)}">

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -79,6 +80,15 @@ public class KboScheduler {
         }
         log.info("앱 시작 - 시즌 전체 동기화 시작");
         syncFullSeason();
+
+        // 승/패 투수는 시즌 시작일부터 오늘까지 전부 하루씩 순서대로 훑어야 해서
+        // (한 번에 임의 날짜로 점프가 안 됨) 요청이 꽤 많이 나간다 — 시즌 전체
+        // 백필(startupSyncEnabled)이 켜져 있을 때만 같이 돈다.
+        LocalDate seasonStart = LocalDate.of(today.getYear(), SEASON_START_MONTH, 1);
+        int daysSinceSeasonStart = (int) ChronoUnit.DAYS.between(seasonStart, today);
+        List<CrawledMatchDto> allPitchers = scoreBoardCrawler.crawlRecentDays(daysSinceSeasonStart);
+        matchService.syncCrawledMatches(League.KBO, allPitchers);
+        log.info("앱 시작 - 시즌 전체 승/패 투수 채우기 완료 - {}건 ({}일치)", allPitchers.size(), daysSinceSeasonStart);
     }
 
     /**
@@ -116,6 +126,17 @@ public class KboScheduler {
     public void syncTodayLiveScores() {
         log.info("KBO 실시간 스코어 동기화 시작");
         List<CrawledMatchDto> crawled = scoreBoardCrawler.crawlToday();
+        matchService.syncCrawledMatches(League.KBO, crawled);
+    }
+
+    /**
+     * 매일 새벽 3시 10분, 최근 3일치를 스코어보드 방식(하루씩 이전날짜 이동)으로 다시 훑어서
+     * 승/패 투수를 채운다. 일정 API(KboCrawler)에는 이 정보가 없어서 별도로 돈다.
+     */
+    @Scheduled(cron = "0 10 3 * * *")
+    public void syncRecentPitchers() {
+        log.info("KBO 최근 경기 승/패 투수 동기화 시작");
+        List<CrawledMatchDto> crawled = scoreBoardCrawler.crawlRecentDays(3);
         matchService.syncCrawledMatches(League.KBO, crawled);
     }
 

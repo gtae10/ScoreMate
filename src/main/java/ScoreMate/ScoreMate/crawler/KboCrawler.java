@@ -120,9 +120,10 @@ public class KboCrawler {
                 String timeText = text(cells.get(idx));
                 String playHtml = text(cells.get(idx + 1));
                 String relayHtml = text(cells.get(idx + 2));
+                String stadium = text(cells.get(idx + 6));
                 String remark = text(cells.get(idx + 7));
 
-                CrawledMatchDto dto = parseGame(currentDate, timeText, playHtml, relayHtml, remark);
+                CrawledMatchDto dto = parseGame(currentDate, timeText, playHtml, relayHtml, stadium, remark);
                 if (dto != null) {
                     results.add(dto);
                 }
@@ -183,7 +184,7 @@ public class KboCrawler {
         return LocalDate.of(year, month, day);
     }
 
-    private CrawledMatchDto parseGame(LocalDate date, String timeText, String playHtml, String relayHtml, String remark) {
+    private CrawledMatchDto parseGame(LocalDate date, String timeText, String playHtml, String relayHtml, String stadium, String remark) {
         LocalTime time = parseTime(timeText);
         LocalDateTime matchDateTime = time != null ? LocalDateTime.of(date, time) : date.atStartOfDay();
 
@@ -231,7 +232,7 @@ public class KboCrawler {
         // 사이에서 항상 똑같이 만들어지므로 더 안전하다.
         String externalId = date.toString() + "_" + homeTeam + "_" + awayTeam;
 
-        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, false, cancelled, postponed, homeScore, awayScore, null);
+        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, false, cancelled, postponed, homeScore, awayScore, null, stadium, null, null);
     }
 
     private LocalTime parseTime(String timeHtml) {
