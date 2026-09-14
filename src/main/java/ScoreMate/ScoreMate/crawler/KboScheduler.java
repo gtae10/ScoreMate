@@ -7,6 +7,7 @@ import ScoreMate.ScoreMate.domain.match.League;
 import ScoreMate.ScoreMate.domain.match.MatchService;
 import ScoreMate.ScoreMate.domain.player.PlayerService;
 import ScoreMate.ScoreMate.domain.team.StandingService;
+import ScoreMate.ScoreMate.dto.response.MatchResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +44,14 @@ public class KboScheduler {
 
     private final PlayerRosterCrawler playerRosterCrawler;
 
+    private final LiveTextCrawler liveTextCrawler;
+
+    private final LiveBoxCrawler liveBoxCrawler;
+
+    // GameCenterCrawler는 만들어뒀지만 스케줄에는 안 걸어둠 — 일별 목록(game-list-n)이
+    // 서버 렌더링이 아니라 JS로 나중에 채워지는 방식이라 지금은 0건만 나온다.
+    // KBO 사이트가 바뀌면 다시 시도해볼 수 있게 크롤러 클래스 자체는 남겨둔다.
+
     // KBO 정규시즌 개막월 근사치. 이 달 이전 데이터는 어차피 없으니 매일 훑을 필요 없음.
     private static final int SEASON_START_MONTH = 4;
 
@@ -74,6 +83,10 @@ public class KboScheduler {
         List<CrawledMatchDto> thisMonth = kboCrawler.crawlByMonth(today.getYear(), today.getMonthValue());
         matchService.syncCrawledMatches(League.KBO, thisMonth);
         log.info("앱 시작 - 이번 달 일정 채우기 완료 - {}건", thisMonth.size());
+
+        List<CrawledStandingDto> standings = standingCrawler.crawlCurrentStandings();
+        standingService.syncCrawledStandings(League.KBO, today.getYear(), standings);
+        log.info("앱 시작 - 순위표 채우기 완료 - {}건", standings.size());
 
         if (!startupSyncEnabled) {
             return;
@@ -127,6 +140,57 @@ public class KboScheduler {
         log.info("KBO 실시간 스코어 동기화 시작");
         List<CrawledMatchDto> crawled = scoreBoardCrawler.crawlToday();
         matchService.syncCrawledMatches(League.KBO, crawled);
+    }
+
+    /**
+     * 20초마다 오늘 진행 중인 경기의 "지금 던지는 투수/타자/최근 문자중계"를 갱신한다
+     * (LiveTextCrawler). 스코어(10초)보다 살짝 여유 있는 주기로 뒀다 — 이 정보들은
+     * 스코어만큼 자주 안 바뀌고, 경기당 요청이 하나 더 나가는 거라 너무 잦으면 부담이라서.
+     */
+    @Scheduled(fixedRate = 20 * 1000)
+    public void syncLivePitchers() {
+        LocalDate today = LocalDate.now();
+        List<MatchResponse> todayMatches = matchService.getMatchesByLeagueAndDate(League.KBO, today);
+
+        for (MatchResponse match : todayMatches) {
+            if (!"LIVE".equals(match.status())) {
+                continue;
+            }
+            String gameId = liveTextCrawler.buildGameId(today, match.awayTeam(), match.homeTeam());
+            if (gameId == null) {
+                continue;
+            }
+            LiveTextCrawler.LiveGameState state = liveTextCrawler.crawlLiveState(gameId);
+            String externalId = today + "_" + match.homeTeam() + "_" + match.awayTeam();
+            matchService.updateLiveGameState(externalId, state.awayPitcher(), state.homePitcher(),
+                    state.currentBatter(), state.recentPlays());
+        }
+    }
+
+    /**
+     * 10초마다 오늘 진행 중인 경기의 라이브박스(이닝/주자/B-S-O/수비 포지션/타석 타자)를 갱신한다
+     * (LiveBoxCrawler). 실제 KBO 쪽 소스(LiveTextView2.aspx)가 10초 간격으로 갱신되는 화면이라
+     * 그보다 짧게 물어봐야 의미가 없어서 딱 그 주기로 맞췄다. syncLivePitchers와 마찬가지로
+     * 앱 전역 ThreadPoolTaskScheduler(SchedulerConfig)를 그대로 같이 쓰므로 syncTodayLiveScores를
+     * 막지 않는다.
+     */
+    @Scheduled(fixedRate = 10 * 1000)
+    public void syncLiveBox() {
+        LocalDate today = LocalDate.now();
+        List<MatchResponse> todayMatches = matchService.getMatchesByLeagueAndDate(League.KBO, today);
+
+        for (MatchResponse match : todayMatches) {
+            if (!"LIVE".equals(match.status())) {
+                continue;
+            }
+            String gameId = liveTextCrawler.buildGameId(today, match.awayTeam(), match.homeTeam());
+            if (gameId == null) {
+                continue;
+            }
+            LiveBoxCrawler.LiveBoxState state = liveBoxCrawler.crawlLiveBox(gameId);
+            String externalId = today + "_" + match.homeTeam() + "_" + match.awayTeam();
+            matchService.updateLiveBoxState(externalId, state);
+        }
     }
 
     /**

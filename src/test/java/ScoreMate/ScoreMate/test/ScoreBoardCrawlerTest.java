@@ -2,6 +2,7 @@ package ScoreMate.ScoreMate.test;
 
 import ScoreMate.ScoreMate.crawler.ScoreBoardCrawler;
 import ScoreMate.ScoreMate.crawler.dto.CrawledMatchDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 오늘 KBO 경기가 아예 없는 날(휴식일 등)엔 결과가 0건일 수 있다 — 그 자체는
  * 정상이니, 결과가 있을 때 필드가 제대로 채워지는지 위주로 확인하면 된다.
  */
+@Tag("manual")
 class ScoreBoardCrawlerTest {
 
     private final ScoreBoardCrawler scoreBoardCrawler = new ScoreBoardCrawler();
@@ -33,6 +35,10 @@ class ScoreBoardCrawlerTest {
                         + " | finished=" + m.finished()
                         + " | live=" + m.live()
                         + " | " + m.homeScore() + ":" + m.awayScore()
+                        + " | 이닝(원정)=" + m.awayInnings()
+                        + " | 이닝(홈)=" + m.homeInnings()
+                        + " | 안타 " + m.awayHits() + ":" + m.homeHits()
+                        + " | 실책 " + m.awayErrors() + ":" + m.homeErrors()
                         + " | externalId=" + m.externalId()
         ));
 
@@ -42,6 +48,13 @@ class ScoreBoardCrawlerTest {
             assertThat(m.externalId()).isNotBlank();
             // 종료/진행중이 동시에 참일 수는 없음
             assertThat(m.finished() && m.live()).isFalse();
+
+            // 종료된 경기는 이닝별 점수판이 항상 채워져 있어야 정상.
+            // LIVE 경기는 막 시작해서 완료된 이닝이 아직 없으면 빈 문자열이 정상이라 제외한다.
+            if (m.finished()) {
+                assertThat(m.awayInnings()).isNotBlank();
+                assertThat(m.homeInnings()).isNotBlank();
+            }
         });
     }
 }

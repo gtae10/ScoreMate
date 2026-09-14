@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}" />
+  <title>ScoreMate</title>
+</head>
+<body>
+
+<div class="error-page" style="max-width:480px;margin:120px auto;padding:0 20px;text-align:center;">
+  <div style="font-size:15px;color:var(--text-dim);margin-bottom:8px;">오류가 발생했어요</div>
+  <div style="font-size:18px;font-weight:600;margin-bottom:24px;" th:text="${message}">문제가 발생했습니다.</div>
+  <a href="/" style="display:inline-block;padding:10px 20px;border:1px solid var(--border);border-radius:8px;color:var(--text);">홈으로 돌아가기</a>
+</div>
+
+</body>
+</html>

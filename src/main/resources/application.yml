@@ -3,9 +3,9 @@ spring:
     name: ScoreMate
 
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/scoremate?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
-    username: scoremate
-    password: ***REMOVED***
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/scoremate?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul}
+    username: ${DB_USERNAME:scoremate}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -18,7 +18,7 @@ spring:
     open-in-view: false
 
 jwt:
-  secret: change-this-to-a-random-secret-string-at-least-32-bytes-long
+  secret: ${JWT_SECRET}
   expiration-ms: 3600000
 
 logging:

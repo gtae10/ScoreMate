@@ -1,6 +1,7 @@
 package ScoreMate.ScoreMate.domain.match;
 
 import ScoreMate.ScoreMate.common.ApiResponse;
+import ScoreMate.ScoreMate.dto.response.LiveBoxResponse;
 import ScoreMate.ScoreMate.dto.response.MatchResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,5 +28,10 @@ public class MatchController {
     @GetMapping("/all")
     public ApiResponse<List<MatchResponse>> getAllMatches() {
         return ApiResponse.success(matchService.getAllMatches());
+    }
+
+    @GetMapping("/{id}/live-box")
+    public ApiResponse<LiveBoxResponse> getLiveBox(@PathVariable Long id) {
+        return ApiResponse.success(matchService.getLiveBox(id));
     }
 }

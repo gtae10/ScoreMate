@@ -143,13 +143,19 @@ public class ScoreBoardCrawler {
 
                 if (delta == null) {
                     String tail = body.length() > 800 ? body.substring(body.length() - 800) : body;
-                    log.error("스코어보드 날짜 이동 응답 파싱 실패 - date: {}, 응답 뒷부분: {}", date, tail);
-                    break; // 다음 날짜도 계속 실패할 가능성이 높으니 중단
+                    log.error("스코어보드 날짜 이동 응답 파싱 완전 실패 - date: {}, 응답 뒷부분: {}", date, tail);
+                    break; // viewState조차 못 건졌으면 다음 요청도 의미 없으니 중단
                 }
 
                 // 다음 반복을 위해 갱신된 VIEWSTATE/EVENTVALIDATION을 이어서 사용
                 viewState = delta.viewState() != null ? delta.viewState() : viewState;
                 eventValidation = delta.eventValidation() != null ? delta.eventValidation() : eventValidation;
+
+                if (delta.panelHtml() == null) {
+                    // 경기 없는 날(휴식일 등) — 이 날짜만 건너뛰고 체인은 계속 이어간다
+                    log.info("스코어보드 - 경기 없는 날로 추정, 건너뜀 - date: {}", date);
+                    continue;
+                }
 
                 Document fragment = Jsoup.parseBodyFragment(delta.panelHtml());
                 Elements gameBlocks = fragment.select("div.smsScore");
@@ -225,7 +231,73 @@ public class ScoreBoardCrawler {
             }
         }
 
-        return new CrawledMatchDto(externalId, homeTeam, awayTeam, matchDateTime, finished, live, false, false, homeScore, awayScore, liveStatusText, stadium, winPitcher, losePitcher);
+        // 이닝별 점수판(table.tScore) — 진행중/종료 경기만 존재. 행 순서는 원정팀이 먼저,
+        // 홈팀이 나중 (leftTeam/rightTeam이랑 동일한 관례). 마지막 4칸(R/H/E/B) 앞까지가
+        // 이닝별 점수, 마지막 4칸 중 앞의 3개가 R/H/E (B는 지금 안 씀).
+        String awayInnings = null;
+        String homeInnings = null;
+        Integer awayHits = null;
+        Integer homeHits = null;
+        Integer awayErrors = null;
+        Integer homeErrors = null;
+
+        Elements lineScoreRows = block.select("table.tScore tbody tr");
+        if (lineScoreRows.size() >= 2) {
+            LineScore away = parseLineScoreRow(lineScoreRows.get(0));
+            LineScore home = parseLineScoreRow(lineScoreRows.get(1));
+            if (away != null) {
+                awayInnings = away.innings();
+                awayHits = away.hits();
+                awayErrors = away.errors();
+            }
+            if (home != null) {
+                homeInnings = home.innings();
+                homeHits = home.hits();
+                homeErrors = home.errors();
+            }
+        }
+
+        return CrawledMatchDto.builder()
+                .externalId(externalId)
+                .homeTeam(homeTeam)
+                .awayTeam(awayTeam)
+                .matchDate(matchDateTime)
+                .finished(finished)
+                .live(live)
+                .homeScore(homeScore)
+                .awayScore(awayScore)
+                .liveStatusText(liveStatusText)
+                .stadium(stadium)
+                .winPitcher(winPitcher)
+                .losePitcher(losePitcher)
+                .awayInnings(awayInnings)
+                .homeInnings(homeInnings)
+                .awayHits(awayHits)
+                .homeHits(homeHits)
+                .awayErrors(awayErrors)
+                .homeErrors(homeErrors)
+                .build();
+    }
+
+    private record LineScore(String innings, Integer hits, Integer errors) {
+    }
+
+    /**
+     * tScore 표의 한 팀 행을 파싱한다. 마지막 4칸(R,H,E,B) 앞까지가 이닝별 점수.
+     */
+    private LineScore parseLineScoreRow(Element row) {
+        Elements cells = row.select("td");
+        if (cells.size() < 4) {
+            return null;
+        }
+        int inningCount = cells.size() - 4;
+        List<String> innings = new ArrayList<>();
+        for (int i = 0; i < inningCount; i++) {
+            innings.add(cells.get(i).text().trim());
+        }
+        Integer hits = parseIntSafe(cells.get(inningCount + 1).text());
+        Integer errors = parseIntSafe(cells.get(inningCount + 2).text());
+        return new LineScore(String.join(",", innings), hits, errors);
     }
 
     /**
@@ -280,7 +352,11 @@ public class ScoreBoardCrawler {
             }
         }
 
-        return panelHtml != null ? new DeltaResult(panelHtml, viewState, eventValidation) : null;
+        // panelHtml이 없어도(경기 없는 날 등) viewState/eventValidation은 있을 수 있다 —
+        // 이걸 버리면 다음 날짜로 못 넘어가서 체인이 끊긴다. 뭐라도 하나 건졌으면 반환.
+        return (panelHtml != null || viewState != null || eventValidation != null)
+                ? new DeltaResult(panelHtml, viewState, eventValidation)
+                : null;
     }
 
     private record DeltaResult(String panelHtml, String viewState, String eventValidation) {

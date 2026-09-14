@@ -67,6 +67,12 @@ public class PageController {
             default -> match.matchDate().toLocalTime().toString().substring(0, 5);
         };
 
+        // 구체적 취소/연기 사유(예: "폭염취소")는 왼쪽 배지가 좁아서 줄바꿈되니,
+        // 스코어 자리 아래에 한 줄로 따로 보여준다.
+        String cancelReason = ("CANCELLED".equals(match.status()) || "POSTPONED".equals(match.status()))
+                ? match.cancelReason()
+                : null;
+
         String homeResult = "";
         String awayResult = "";
         if (match.homeScore() != null && match.awayScore() != null) {
@@ -79,23 +85,15 @@ public class PageController {
             }
         }
 
-        // 승/패 투수를 스코어 결과 기준으로 홈/원정에 배정 (이긴 팀 쪽에 승리투수, 진 팀 쪽에 패전투수)
-        String homePitcher = null;
-        String awayPitcher = null;
-        if ("win".equals(homeResult)) {
-            homePitcher = match.winPitcher();
-            awayPitcher = match.losePitcher();
-        } else if ("lose".equals(homeResult)) {
-            homePitcher = match.losePitcher();
-            awayPitcher = match.winPitcher();
-        }
-
+        // 투수 표시 우선순위(지금 던지는 투수(LIVE) > 선발투수 > 승/패 투수)는 MatchResponse.from()에서
+        // 이미 계산되어 내려온다 — 대시보드/상세 페이지/실시간 갱신 API가 이 값을 그대로 재사용한다.
         return new MatchView(
+                match.id(),
                 statusText,
                 "LIVE".equals(match.status()),
-                match.homeTeam(), homeBadge.code(), homeBadge.color(), match.homeScore(), homeResult, homePitcher,
-                match.awayTeam(), awayBadge.code(), awayBadge.color(), match.awayScore(), awayResult, awayPitcher,
-                match.stadium()
+                match.homeTeam(), homeBadge.code(), homeBadge.color(), match.homeScore(), homeResult, match.homePitcher(),
+                match.awayTeam(), awayBadge.code(), awayBadge.color(), match.awayScore(), awayResult, match.awayPitcher(),
+                match.stadium(), cancelReason
         );
     }
 
@@ -128,11 +126,12 @@ public class PageController {
      * (팀 배지 색/약자, 승/패 여부까지 컨트롤러에서 계산해서 템플릿은 단순 출력만 하게 함)
      */
     public record MatchView(
+            Long id,
             String statusText,
             boolean live,
             String homeTeam, String homeCode, String homeColor, Integer homeScore, String homeResult, String homePitcher,
             String awayTeam, String awayCode, String awayColor, Integer awayScore, String awayResult, String awayPitcher,
-            String stadium
+            String stadium, String cancelReason
     ) {
     }
 }

@@ -11,7 +11,8 @@ public record StandingResponse(
         int losses,
         int draws,
         double winRate,
-        Double gamesBehind
+        Double gamesBehind,
+        String streak
 ) {
     public static StandingResponse from(Standing standing) {
         return new StandingResponse(
@@ -23,7 +24,8 @@ public record StandingResponse(
                 standing.getLosses(),
                 standing.getDraws(),
                 standing.getWinRate(),
-                standing.getGamesBehind()
+                standing.getGamesBehind(),
+                standing.getStreak()
         );
     }
 }

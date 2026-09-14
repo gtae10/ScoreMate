@@ -5,9 +5,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### 실제 DB 비밀번호/JWT 시크릿이 들어있는 설정 파일 (커밋 금지) ###
-src/main/resources/application.yml
-src/main/resources/application-dev.yml
+### 로컬 개발용 비밀값 (실제 DB 비밀번호/JWT 시크릿) ###
+# application.yml/application-dev.yml은 이제 ${DB_PASSWORD} 같은 환경변수 참조만 담고 있어서
+# 커밋해도 안전하다 - 실제 값은 .env에만 넣는다 (.env.example 참고).
+.env
 
 ### STS ###
 .apt_generated

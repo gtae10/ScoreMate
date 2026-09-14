@@ -70,7 +70,7 @@
     </div>
 
     <div class="match-list">
-      <div class="match-row" th:each="match : ${matches}" th:attr="data-away=${match.awayTeam},data-home=${match.homeTeam}">
+      <a class="match-row" th:each="match : ${matches}" th:href="@{/matches/{id}(id=${match.id})}" th:attr="data-away=${match.awayTeam},data-home=${match.homeTeam}">
         <div class="status-badge"
              th:classappend="${match.live} ? ' live' : ''"
              th:text="${match.statusText}">
@@ -82,7 +82,7 @@
             <span th:text="${match.awayTeam}">원정팀</span>
             <div class="crest" th:style="'background:' + ${match.awayColor}" th:text="${match.awayCode}">팀</div>
           </div>
-          <div class="pitcher" th:if="${match.awayPitcher != null}" th:text="'선발 투수: ' + ${match.awayPitcher}">선발 투수: 투수명</div>
+          <div class="pitcher pitcher-away" th:text="${match.awayPitcher != null} ? ('선발 투수: ' + ${match.awayPitcher}) : ''" th:style="${match.awayPitcher == null} ? 'display:none' : ''">선발 투수: 투수명</div>
         </div>
 
         <div class="score-box" th:if="${match.homeScore != null}">
@@ -91,7 +91,10 @@
           <span class="n" th:classappend="' ' + ${match.homeResult}" th:text="${match.homeScore}">0</span>
         </div>
         <div class="score-box" th:if="${match.homeScore == null}">
-          <span class="dash">– : –</span>
+          <div class="no-score-col">
+            <span class="dash">– : –</span>
+            <span class="cancel-reason" th:if="${match.cancelReason != null}" th:text="${match.cancelReason}">폭염취소</span>
+          </div>
         </div>
 
         <div class="team-col team-col-right">
@@ -99,11 +102,11 @@
             <span th:text="${match.homeTeam}">홈팀</span>
             <div class="crest" th:style="'background:' + ${match.homeColor}" th:text="${match.homeCode}">팀</div>
           </div>
-          <div class="pitcher" th:if="${match.homePitcher != null}" th:text="'선발 투수: ' + ${match.homePitcher}">선발 투수: 투수명</div>
+          <div class="pitcher pitcher-home" th:text="${match.homePitcher != null} ? ('선발 투수: ' + ${match.homePitcher}) : ''" th:style="${match.homePitcher == null} ? 'display:none' : ''">선발 투수: 투수명</div>
         </div>
 
         <div class="stadium" th:text="${match.stadium}">잠실</div>
-      </div>
+      </a>
 
       <div class="match-row" th:if="${#lists.isEmpty(matches)}">
         <div class="league-sub" style="grid-column: 1 / -1; text-align:center; padding: 8px 0;">
@@ -159,7 +162,37 @@
         '<span class="dash">–</span>' +
         '<span class="n' + resultClass(match.homeScore, match.awayScore) + '">' + match.homeScore + '</span>';
     } else {
-      scoreBox.innerHTML = '<span class="dash">– : –</span>';
+      // cancelReason은 KBO 사이트에서 크롤링해온 문자열이라, innerHTML 조합 대신
+      // textContent로만 넣어서 마크업이 섞여 들어와도 실행되지 않게 한다.
+      scoreBox.replaceChildren();
+      const noScoreCol = document.createElement('div');
+      noScoreCol.className = 'no-score-col';
+      const dash = document.createElement('span');
+      dash.className = 'dash';
+      dash.textContent = '– : –';
+      noScoreCol.appendChild(dash);
+      if (match.cancelReason) {
+        const reason = document.createElement('span');
+        reason.className = 'cancel-reason';
+        reason.textContent = match.cancelReason;
+        noScoreCol.appendChild(reason);
+      }
+      scoreBox.appendChild(noScoreCol);
+    }
+
+    // 투수 표시 우선순위는 서버(MatchResponse.from())에서 이미 계산되어 내려온다 — 여기서 다시 계산하지 않는다.
+    updatePitcherDiv(row.querySelector('.pitcher-away'), match.awayPitcher);
+    updatePitcherDiv(row.querySelector('.pitcher-home'), match.homePitcher);
+  }
+
+  function updatePitcherDiv(el, pitcherName) {
+    if (!el) return;
+    if (pitcherName) {
+      el.textContent = '선발 투수: ' + pitcherName;
+      el.style.display = '';
+    } else {
+      el.textContent = '';
+      el.style.display = 'none';
     }
   }
 

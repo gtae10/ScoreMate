@@ -4,6 +4,7 @@ import ScoreMate.ScoreMate.crawler.KboCrawler;
 import ScoreMate.ScoreMate.crawler.dto.CrawledMatchDto;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * (KboCrawler가 @Component라 스프링 빈으로 등록돼 있긴 하지만,
  *  이 테스트는 `new KboCrawler()`로 직접 생성해서 컨텍스트 로딩 없이 돈다)
  */
+@Tag("manual")
 class KboCrawlerTest {
 
     private final KboCrawler kboCrawler = new KboCrawler();

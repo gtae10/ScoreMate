@@ -3,6 +3,7 @@ package ScoreMate.ScoreMate.test;
 import ScoreMate.ScoreMate.crawler.KboScheduler;
 import ScoreMate.ScoreMate.domain.match.League;
 import ScoreMate.ScoreMate.domain.team.StandingService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * syncStandings / syncPlayerRecords 두 개만 확인한다.
  */
 @SpringBootTest
+@Tag("manual")
 class KboSchedulerTest {
 
     @Autowired

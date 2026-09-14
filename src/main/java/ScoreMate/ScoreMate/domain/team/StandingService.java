@@ -30,7 +30,7 @@ public class StandingService {
      */
     @Transactional
     public void upsertStanding(Team team, int season, int rank, int wins, int losses, int draws,
-                                double winRate, Double gamesBehind) {
+                                double winRate, Double gamesBehind, String streak) {
         Standing standing = standingRepository.findByTeamAndSeason(team, season)
                 .orElseGet(() -> Standing.builder()
                         .team(team)
@@ -41,9 +41,10 @@ public class StandingService {
                         .draws(draws)
                         .winRate(winRate)
                         .gamesBehind(gamesBehind)
+                        .streak(streak)
                         .build());
 
-        standing.update(rank, wins, losses, draws, winRate, gamesBehind);
+        standing.update(rank, wins, losses, draws, winRate, gamesBehind, streak);
         standingRepository.save(standing);
     }
 
@@ -56,7 +57,7 @@ public class StandingService {
         for (CrawledStandingDto dto : crawledStandings) {
             Team team = getOrCreateTeam(league, dto.externalTeamCode(), dto.teamNameKorean());
             upsertStanding(team, season, dto.rank(), dto.wins(), dto.losses(), dto.draws(),
-                    dto.winRate(), dto.gamesBehind());
+                    dto.winRate(), dto.gamesBehind(), dto.streak());
         }
         log.info("순위표 동기화 완료 - league: {}, season: {}, 건수: {}", league, season, crawledStandings.size());
     }

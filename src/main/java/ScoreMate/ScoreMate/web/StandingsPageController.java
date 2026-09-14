@@ -36,13 +36,13 @@ public class StandingsPageController {
         TeamBadgeMapper.TeamBadge badge = TeamBadgeMapper.badgeFor(s.teamName());
         return new StandingView(
                 s.rank(), s.teamName(), badge.code(), badge.color(),
-                s.wins(), s.losses(), s.draws(), s.winRate(), s.gamesBehind()
+                s.wins(), s.losses(), s.draws(), s.winRate(), s.gamesBehind(), s.streak()
         );
     }
 
     public record StandingView(
             int rank, String teamName, String code, String color,
-            int wins, int losses, int draws, double winRate, Double gamesBehind
+            int wins, int losses, int draws, double winRate, Double gamesBehind, String streak
     ) {
     }
 }

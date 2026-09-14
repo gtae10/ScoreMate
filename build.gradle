@@ -31,6 +31,11 @@ dependencies {
     // JSON 파싱 (KBO 일정 API 응답 처리용)
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+    // 로컬 개발용 .env 파일 로딩 (DB 비밀번호/JWT 시크릿을 코드/설정 파일에 평문으로 안 남기기 위함)
+    // developmentOnly와 같은 이유로 운영 산출물(jar)에는 안 들어가지만, 테스트도 로컬 DB를
+    // 그대로 쓰므로 testAndDevelopmentOnly로 bootRun/테스트 양쪽 다 .env를 읽게 한다.
+    testAndDevelopmentOnly 'me.paulschwarz:springboot4-dotenv:5.1.0'
+
     // 크롤링
     implementation 'org.jsoup:jsoup:1.17.2'
 
@@ -51,6 +56,7 @@ dependencies {
 
     // 테스트
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
     testImplementation 'org.springframework.security:spring-security-test'
 
     // 개발 편의
@@ -58,5 +64,11 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		// 실제 KBO 사이트로 네트워크 요청을 보내는 테스트는 @Tag("manual")을 붙여서
+		// 평소 빌드/CI에서 제외한다. 확인이 필요할 때만 -PincludeManual로 포함해서 돌릴 것.
+		if (!project.hasProperty('includeManual')) {
+			excludeTags 'manual'
+		}
+	}
 }

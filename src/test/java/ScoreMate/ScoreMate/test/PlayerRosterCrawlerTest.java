@@ -4,6 +4,7 @@ import ScoreMate.ScoreMate.crawler.PlayerRosterCrawler;
 import ScoreMate.ScoreMate.crawler.dto.CrawledPlayerDto;
 import ScoreMate.ScoreMate.domain.match.League;
 import ScoreMate.ScoreMate.domain.player.PlayerService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,6 +23,7 @@ import java.util.List;
  * MatchSyncIntegrationTest처럼 assert를 추가할 것)
  */
 @SpringBootTest
+@Tag("manual")
 class PlayerRosterCrawlerTest {
 
     @Autowired

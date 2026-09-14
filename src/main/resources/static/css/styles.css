@@ -207,6 +207,9 @@ main{
 .match-list{ border-top: 1px solid var(--border); }
 .match-row{
   display:grid;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
   grid-template-columns: 56px 1fr 148px 1fr 90px;
   align-items:center;
   padding: 14px 20px;
@@ -239,7 +242,8 @@ main{
 .pitcher{
   font-size: 12px;
   color: var(--text);
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
 }
 
 .crest{
@@ -258,6 +262,16 @@ main{
 }
 .score-box .n{ min-width: 20px; text-align:center; }
 .score-box .dash{ color: var(--text-faint); font-weight:400; font-size:15px; }
+
+.no-score-col{
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+}
+.cancel-reason{
+  font-size: 11px;
+  color: var(--text-faint);
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+}
 .score-box .win{ color: #33c17a; }
 .score-box .lose{ color: #e0525a; }
 
@@ -268,6 +282,219 @@ main{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ---------- 경기 상세 페이지 ---------- */
+.match-hero{
+  display:flex; align-items:center; justify-content:center; gap:40px;
+  padding: 32px 20px;
+}
+.match-hero .team-block{
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  min-width: 140px;
+}
+.match-hero .crest{ width:56px; height:56px; font-size:18px; }
+.match-hero .team-name{ font-size:16px; font-weight:700; }
+.match-hero .pitcher{ font-size:12px; color: var(--text-faint); }
+.match-hero .center{
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.match-hero .big-score{
+  font-family:'Roboto Mono',monospace;
+  font-size: 36px; font-weight:700;
+  display:flex; align-items:center; gap:14px;
+}
+.match-hero .big-score .dash{ color: var(--text-faint); font-size:22px; font-weight:400; }
+.match-hero .meta{ font-size:12.5px; color: var(--text-faint); text-align:center; }
+
+.line-score-table{
+  width:100%;
+  border-collapse: collapse;
+  font-family:'Roboto Mono',monospace;
+  font-size: 13px;
+}
+.line-score-table th, .line-score-table td{
+  text-align:center;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.line-score-table th{
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight:600;
+  font-family:'Inter',sans-serif;
+}
+.line-score-table td.team-label{
+  text-align:left;
+  font-family:'Inter',sans-serif;
+  font-weight:700;
+  padding-left:16px;
+}
+.line-score-table td.total{ font-weight:700; color: var(--accent); }
+.line-score-table tbody tr:last-child td{ border-bottom:none; }
+
+.no-line-score{
+  padding: 30px 0;
+  text-align:center;
+  color: var(--text-faint);
+  font-size:13px;
+}
+
+/* ---------- 실시간 중계 패널 ---------- */
+.live-panel{
+  border-top: 1px solid var(--border);
+  padding: 22px 20px 26px;
+}
+.panel-title{
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin: 0 0 16px;
+}
+.live-panel-body{
+  display:flex;
+  gap: 28px;
+  align-items:flex-start;
+  flex-wrap: wrap;
+}
+
+.diamond-mini{
+  position: relative;
+  width: 280px;
+  height: 280px;
+  flex: 0 0 auto;
+  margin-top: 34px;
+}
+.diamond-mini::before{
+  content:'';
+  position:absolute;
+  inset: 20px 20px 60px;
+  border: 2px solid rgba(242,169,59,0.35);
+  transform: rotate(45deg);
+  border-radius: 4px;
+}
+.diamond-mini .base{
+  position:absolute;
+  width:14px; height:14px;
+  background: var(--bg);
+  border: 2px solid var(--text-faint);
+  transform: rotate(45deg);
+  transition: background 0.15s, border-color 0.15s;
+}
+.diamond-mini .base-1b{ right: 33px; top: 50%; margin-top:-27px; }
+.diamond-mini .base-2b{ left: 50%; top: 13px; margin-left:-7px; }
+.diamond-mini .base-3b{ left: 33px; top: 50%; margin-top:-27px; }
+.diamond-mini .base.occupied{
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 수비 9포지션 라벨 - 다이아몬드 안쪽 대략적인 위치에 절대좌표로 배치 */
+.diamond-mini .pos{
+  position:absolute;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  transform: translate(-50%,-50%);
+  white-space: nowrap;
+}
+.diamond-mini .pos-label{
+  font-size: 9px;
+  color: var(--text-faint);
+}
+.diamond-mini .pos-name{
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.diamond-mini .pos-lf{ left: 18%; top: 6%; }
+.diamond-mini .pos-cf{ left: 50%; top: 0%; }
+.diamond-mini .pos-rf{ left: 82%; top: 6%; }
+.diamond-mini .pos-ss{ left: 36%; top: 34%; }
+.diamond-mini .pos-2b{ left: 64%; top: 34%; }
+.diamond-mini .pos-3b{ left: 22%; top: 58%; }
+.diamond-mini .pos-1b{ left: 78%; top: 58%; }
+.diamond-mini .pos-c{ left: 50%; top: 78%; }
+
+/* B-S-O 카운트 - 우상단에 볼/스트라이크/아웃 점으로 표시 */
+.diamond-mini .count-board{
+  position:absolute;
+  top: -30px;
+  left: 0;
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+.diamond-mini .count-row{
+  display:flex;
+  align-items:center;
+  gap: 5px;
+}
+.diamond-mini .count-label{
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-faint);
+  width: 10px;
+}
+.diamond-mini .count-row .dot{
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-faint);
+  background: transparent;
+}
+.diamond-mini .count-row .dot.on{
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.diamond-mini .mound{
+  position:absolute; left:50%; top:50%;
+  transform: translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  width: 92px;
+}
+.diamond-mini .home-plate{
+  position:absolute; left:50%; bottom: 4px;
+  transform: translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  width: 100px;
+}
+.diamond-mini .mound-label, .diamond-mini .plate-label{
+  font-size: 10px;
+  color: var(--text-faint);
+}
+.diamond-mini .mound-name, .diamond-mini .plate-name{
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.live-feed{
+  flex: 1;
+  min-width: 240px;
+  max-height: 200px;
+  overflow-y: auto;
+  display:flex; flex-direction:column; gap:8px;
+  padding-right: 4px;
+}
+.live-feed-line{
+  font-size: 12.5px;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  line-height: 1.4;
+}
+.live-feed-line.latest{
+  color: var(--text);
+  border: 1px solid var(--accent-dim);
+}
+.live-feed-empty{
+  font-size: 13px;
+  color: var(--text-faint);
 }
 
 /* ---------- data table (순위표) ---------- */

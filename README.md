@@ -75,10 +75,23 @@ GRANT ALL PRIVILEGES ON scoremate.* TO 'scoremate'@'%';
 FLUSH PRIVILEGES;
 ```
 
-### 3. 설정 파일
-`src/main/resources/application.yml.example`을 복사해서 `application.yml`로 만들고,
-DB 비밀번호와 JWT 시크릿 값을 채워주세요. (`application.yml`은 `.gitignore`에 포함되어 있어
-실제 비밀번호가 커밋되지 않습니다.)
+### 3. 환경변수 설정 (.env)
+DB 비밀번호, JWT 시크릿 같은 민감정보는 설정 파일에 평문으로 두지 않고 환경변수로 주입합니다.
+`.env.example`을 복사해서 `.env`로 만들고 실제 값을 채워주세요.
+
+```bash
+cp .env.example .env
+```
+
+| 변수 | 설명 |
+|---|---|
+| `DB_URL` | MySQL 접속 URL (로컬 기본값 예시가 이미 채워져 있음) |
+| `DB_USERNAME` | MySQL 사용자명 |
+| `DB_PASSWORD` | MySQL 비밀번호 (2번에서 만든 값) |
+| `JWT_SECRET` | JWT 서명 시크릿 (최소 32바이트 이상의 무작위 문자열) |
+
+`.env`는 `.gitignore`에 등록되어 있어 커밋되지 않습니다. [spring-dotenv](https://github.com/paulschwarz/spring-dotenv)
+라이브러리가 앱/테스트 실행 시 `.env`를 자동으로 읽어 환경변수로 주입해주므로 별도 실행 설정이 필요 없습니다.
 
 ### 4. 실행
 ```bash
@@ -109,9 +122,16 @@ REST API도 `/api/**` 경로로 별도 제공합니다 (프론트를 다른 방�
 
 ## 테스트
 
-실제 KBO 사이트로 네트워크 요청을 보내는 크롤러 테스트는 `src/test/.../test/` 패키지에 있고,
-평소 `./gradlew test`에는 자동으로 안 걸리게 해뒀습니다 (클래스 상단 주석에 안내). 확인이
-필요할 때 IntelliJ에서 해당 테스트 메서드를 직접 실행하면 됩니다.
+실제 KBO 사이트로 네트워크 요청을 보내는 크롤러 테스트는 `@Tag("manual")`을 붙여뒀고,
+`build.gradle`에서 기본적으로 제외하도록 설정해서 평소 `./gradlew test`에는 자동으로 안
+걸립니다. 확인이 필요할 때는 다음 중 하나로 실행하세요.
+
+```bash
+# manual 태그 테스트까지 전부 포함해서 실행
+./gradlew test -PincludeManual
+```
+
+또는 IntelliJ에서 해당 테스트 메서드를 직접 실행해도 됩니다.
 
 네트워크 호출이 없는 순수 로직/페이지 테스트(`PageControllerTest` 등)는 평소 빌드에서
 자동으로 같이 돕니다.

@@ -1,5 +1,7 @@
 package ScoreMate.ScoreMate.test;
 
+import ScoreMate.ScoreMate.exception.CustomException;
+import ScoreMate.ScoreMate.web.MatchDetailPageController;
 import ScoreMate.ScoreMate.web.PageController;
 import ScoreMate.ScoreMate.web.PlayerPageController;
 import ScoreMate.ScoreMate.web.StandingsPageController;
@@ -10,6 +12,7 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 대시보드/순위표/선수 검색 페이지의 컨트롤러가 올바른 뷰 이름과 모델 속성을
@@ -29,6 +32,9 @@ class PageControllerTest {
 
     @Autowired
     private PlayerPageController playerPageController;
+
+    @Autowired
+    private MatchDetailPageController matchDetailPageController;
 
     @Test
     void 대시보드_페이지가_정상_렌더링된다() {
@@ -71,5 +77,13 @@ class PageControllerTest {
 
         assertThat(view).isEqualTo("players");
         assertThat(model.getAttribute("searched")).isEqualTo(true);
+    }
+
+    @Test
+    void 존재하지_않는_경기_상세페이지는_예외를_던진다() {
+        Model model = new ExtendedModelMap();
+
+        assertThatThrownBy(() -> matchDetailPageController.detail(-1L, model))
+                .isInstanceOf(CustomException.class);
     }
 }

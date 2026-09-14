@@ -50,8 +50,12 @@ public class Standing extends BaseEntity {
     // 1위와의 승차 (KBO 순위표 기본 항목)
     private Double gamesBehind;
 
+    // 연속 승/패 (예: "5승", "3패"). 원본 텍스트 그대로 저장.
+    @Column(length = 10)
+    private String streak;
+
     @Builder
-    public Standing(Team team, int season, int rank, int wins, int losses, int draws, double winRate, Double gamesBehind) {
+    public Standing(Team team, int season, int rank, int wins, int losses, int draws, double winRate, Double gamesBehind, String streak) {
         this.team = team;
         this.season = season;
         this.rank = rank;
@@ -60,14 +64,18 @@ public class Standing extends BaseEntity {
         this.draws = draws;
         this.winRate = winRate;
         this.gamesBehind = gamesBehind;
+        this.streak = streak;
     }
 
-    public void update(int rank, int wins, int losses, int draws, double winRate, Double gamesBehind) {
+    public void update(int rank, int wins, int losses, int draws, double winRate, Double gamesBehind, String streak) {
         this.rank = rank;
         this.wins = wins;
         this.losses = losses;
         this.draws = draws;
         this.winRate = winRate;
         this.gamesBehind = gamesBehind;
+        if (streak != null && !streak.isBlank()) {
+            this.streak = streak;
+        }
     }
 }

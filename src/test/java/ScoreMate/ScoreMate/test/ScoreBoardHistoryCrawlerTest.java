@@ -2,6 +2,7 @@ package ScoreMate.ScoreMate.test;
 
 import ScoreMate.ScoreMate.crawler.ScoreBoardCrawler;
 import ScoreMate.ScoreMate.crawler.dto.CrawledMatchDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 자동으로 돌면 안 되니, 확인이 필요할 때만 메서드를 직접 선택해서(IntelliJ 메서드 옆
  * 초록 버튼) 수동으로 실행할 것.
  */
+@Tag("manual")
 class ScoreBoardHistoryCrawlerTest {
 
     private final ScoreBoardCrawler scoreBoardCrawler = new ScoreBoardCrawler();

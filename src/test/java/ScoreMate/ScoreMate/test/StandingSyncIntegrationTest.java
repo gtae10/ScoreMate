@@ -5,6 +5,7 @@ import ScoreMate.ScoreMate.crawler.dto.CrawledStandingDto;
 import ScoreMate.ScoreMate.domain.match.League;
 import ScoreMate.ScoreMate.domain.team.StandingService;
 import ScoreMate.ScoreMate.dto.response.StandingResponse;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 초록 버튼) 수동으로 실행할 것 — 클래스 전체 실행이나 ./gradlew test로는 켜지 않는다.
  */
 @SpringBootTest
+@Tag("manual")
 class StandingSyncIntegrationTest {
 
     @Autowired

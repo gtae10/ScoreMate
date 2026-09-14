@@ -1,5 +1,7 @@
 package ScoreMate.ScoreMate.config;
 
+import ScoreMate.ScoreMate.security.CustomAccessDeniedHandler;
+import ScoreMate.ScoreMate.security.CustomAuthenticationEntryPoint;
 import ScoreMate.ScoreMate.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -37,13 +41,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/standings", "/players", "/players/**", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/standings", "/players", "/players/**", "/matches/**", "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/api/users/signup", "/api/auth/**").permitAll()
                         .requestMatchers("/api/matches/**").permitAll()
                         .requestMatchers("/api/teams/**").permitAll()
                         .requestMatchers("/api/standings/**").permitAll()
                         .requestMatchers("/api/players/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

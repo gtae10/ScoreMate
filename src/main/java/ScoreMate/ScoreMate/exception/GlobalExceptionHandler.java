@@ -7,7 +7,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice
+/**
+ * REST API 컨트롤러(domain 패키지의 @RestController) 전용 예외 핸들러(JSON).
+ * 페이지 컨트롤러(web 패키지)는 PageExceptionHandler(HTML)가 담당한다.
+ */
+@RestControllerAdvice(basePackages = "ScoreMate.ScoreMate.domain")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException.class)

@@ -1,7 +1,10 @@
 package ScoreMate.ScoreMate.domain.match;
 
+import ScoreMate.ScoreMate.crawler.LiveBoxCrawler;
 import ScoreMate.ScoreMate.crawler.dto.CrawledMatchDto;
+import ScoreMate.ScoreMate.dto.response.LiveBoxResponse;
 import ScoreMate.ScoreMate.dto.response.MatchResponse;
+import ScoreMate.ScoreMate.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,18 @@ public class MatchService {
         return matchRepository.findByLeagueAndDate(league, date).stream()
                 .map(MatchResponse::from)
                 .toList();
+    }
+
+    public MatchResponse getMatch(Long matchId) {
+        return matchRepository.findById(matchId)
+                .map(MatchResponse::from)
+                .orElseThrow(() -> new CustomException("경기를 찾을 수 없습니다."));
+    }
+
+    public LiveBoxResponse getLiveBox(Long matchId) {
+        return matchRepository.findById(matchId)
+                .map(LiveBoxResponse::from)
+                .orElseThrow(() -> new CustomException("경기를 찾을 수 없습니다."));
     }
 
     public List<MatchResponse> getAllMatches() {
@@ -53,18 +68,58 @@ public class MatchService {
 
             match.updateStadium(dto.stadium());
             match.updatePitchers(dto.winPitcher(), dto.losePitcher());
+            match.updateStartingPitchers(dto.awayStartingPitcher(), dto.homeStartingPitcher());
+            match.updateLineScore(dto.awayInnings(), dto.homeInnings(), dto.awayHits(), dto.homeHits(), dto.awayErrors(), dto.homeErrors());
 
             if (dto.finished() && dto.homeScore() != null && dto.awayScore() != null) {
                 match.updateResult(dto.homeScore(), dto.awayScore());
             } else if (dto.live() && dto.homeScore() != null && dto.awayScore() != null) {
                 match.markLive(dto.homeScore(), dto.awayScore(), dto.liveStatusText());
             } else if (dto.postponed()) {
-                match.markPostponed();
+                match.markPostponed(dto.cancelReason());
             } else if (dto.cancelled()) {
-                match.markCancelled();
+                match.markCancelled(dto.cancelReason());
             }
         }
         log.info("경기 데이터 동기화 완료 - league: {}, 건수: {}", league, crawledMatches.size());
+    }
+
+    /**
+     * 진행 중인 경기의 "지금 던지는 투수" + 타자 + 최근 문자중계를 한 번에 갱신한다
+     * (LiveTextCrawler 전용). 투수/타자 둘 다 null이고 문자중계도 없으면
+     * (네트워크 오류 등 파싱 완전 실패로 보고) 기존 값을 건드리지 않는다.
+     */
+    @Transactional
+    public void updateLiveGameState(String externalId, String awayCurrentPitcher, String homeCurrentPitcher,
+                                     String currentBatter, List<String> recentPlays) {
+        boolean gotNothing = awayCurrentPitcher == null && homeCurrentPitcher == null
+                && currentBatter == null && (recentPlays == null || recentPlays.isEmpty());
+        if (gotNothing) {
+            return;
+        }
+        matchRepository.findByExternalId(externalId).ifPresent(match -> {
+            match.updateCurrentPitchers(awayCurrentPitcher, homeCurrentPitcher);
+            match.updateLiveState(currentBatter, recentPlays);
+        });
+    }
+
+    /**
+     * 진행 중인 경기의 라이브박스(이닝/주자/B-S-O/수비 포지션/타석 타자)를 갱신한다 (LiveBoxCrawler 전용).
+     * state가 null이면(경기 시작 전이라 ".economy" 블록이 없거나 크롤링 실패) 기존 값을 건드리지 않는다.
+     */
+    @Transactional
+    public void updateLiveBoxState(String externalId, LiveBoxCrawler.LiveBoxState state) {
+        if (state == null) {
+            return;
+        }
+        matchRepository.findByExternalId(externalId).ifPresent(match -> match.updateLiveBox(
+                state.inningText(), state.currentBatter(),
+                state.runnerOnFirst(), state.runnerOnSecond(), state.runnerOnThird(),
+                state.ballCount(), state.strikeCount(), state.outCount(),
+                state.pitcher(), state.catcher(), state.firstBase(), state.secondBase(),
+                state.thirdBase(), state.shortstop(), state.leftFielder(),
+                state.centerFielder(), state.rightFielder()
+        ));
     }
 
     /**

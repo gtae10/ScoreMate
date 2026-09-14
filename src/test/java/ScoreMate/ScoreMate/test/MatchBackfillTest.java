@@ -4,6 +4,7 @@ import ScoreMate.ScoreMate.crawler.KboCrawler;
 import ScoreMate.ScoreMate.crawler.dto.CrawledMatchDto;
 import ScoreMate.ScoreMate.domain.match.League;
 import ScoreMate.ScoreMate.domain.match.MatchService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +27,7 @@ import java.util.List;
  * START_MONTH를 시즌 시작 월에 맞게, END_MONTH를 현재 월에 맞게 바꿔서 실행하면 된다.
  */
 @SpringBootTest
+@Tag("manual")
 class MatchBackfillTest {
 
     private static final int SEASON_YEAR = 2026;
